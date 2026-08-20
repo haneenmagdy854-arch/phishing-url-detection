@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phishing URL Detection</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  font-family:'Roboto',sans-serif;
+  background: radial-gradient(circle at 20% 20%, #090a1a, #03030a);
+  color:#fff;
+  overflow:hidden;
+  height:100vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+}
+
+/* Top Buttons */
+.top-buttons{
+  position:absolute;
+  top:25px;
+  display:flex;
+  gap:20px;
+  z-index:5;
+}
+.top-buttons button{
+  background: linear-gradient(90deg,#00aaff,#7f00ff);
+  color:#fff;
+  border:none;
+  border-radius:25px;
+  padding:10px 22px;
+  font-weight:bold;
+  cursor:pointer;
+  box-shadow:0 0 10px rgba(0,180,255,0.5);
+  transition:0.3s;
+}
+.top-buttons button:hover{
+  transform:scale(1.05);
+  box-shadow:0 0 20px rgba(0,200,255,0.8);
+}
+
+/* Background canvas */
+canvas{
+  position:absolute;
+  top:0; left:0;
+  width:100%; height:100%;
+  z-index:0;
+}
+
+/* Main Card */
+.container{
+  position:relative;
+  z-index:3;
+  text-align:center;
+  background:rgba(20,20,35,0.85);
+  padding:70px 70px 50px 70px;
+  border-radius:25px;
+  box-shadow:0 0 45px rgba(0,150,255,0.4);
+  backdrop-filter:blur(12px);
+  border:1px solid rgba(0,180,255,0.4);
+  width:500px;
+}
+h1{
+  font-family:'Orbitron',sans-serif;
+  font-size:28px;
+  color:#57b3ff;
+  text-shadow:0 0 15px #0ff;
+  margin-bottom:24px;
+}
+input{
+  width:100%;
+  padding:14px;
+  border-radius:10px;
+  border:none;
+  outline:none;
+  font-size:15px;
+  text-align:center;
+  background: rgba(255,255,255,0.1);
+  color:#fff;
+  transition:0.3s;
+  position:relative;
+  z-index:1;
+}
+input:focus{
+  background: rgba(255,255,255,0.18);
+  box-shadow:0 0 10px rgba(0,180,255,0.6);
+}
+button#scanBtn{
+  margin-top:20px;
+  background: linear-gradient(90deg,#00aaff,#7f00ff);
+  color:#fff;
+  border:none;
+  border-radius:12px;
+  padding:12px 22px;
+  font-size:16px;
+  font-weight:700;
+  cursor:pointer;
+  transition:0.4s;
+  width:100%;
+}
+button#scanBtn:hover{
+  box-shadow:0 0 25px rgba(0,200,255,0.6);
+  transform:scale(1.05);
+}
+.result{
+  margin-top:22px;
+  font-size:16px;
+  font-weight:600;
+}
+.safe{ color:#00ff99; text-shadow:0 0 8px #00ff99;}
+.danger{ color:#ff3366; text-shadow:0 0 8px #ff3366;}
+.loading{ color:#ffc107; text-shadow:0 0 8px #ffc107;}
+
+/* Magnifier Wrapper on the right */
+.magnifier{
+  position:absolute;
+  top:50%;
+  right:50px;
+  transform:translateY(-50%) rotate(0deg);
+  transform-origin:center center;
+  z-index:4;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+}
+
+/* Lens */
+.lens{
+  width:120px;
+  height:120px;
+  border:6px solid rgba(0,255,255,0.6);
+  border-radius:50%;
+  background: rgba(0,255,255,0.1);
+  box-shadow: inset 0 0 15px rgba(255,255,255,0.3),
+              0 0 20px rgba(0,200,255,0.4);
+  position:relative;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  transition:0.3s;
+}
+
+/* Lens highlight */
+.highlight{
+  position:absolute;
+  top:15%;
+  left:15%;
+  width:25%;
+  height:25%;
+  background: rgba(255,255,255,0.3);
+  border-radius:50%;
+}
+
+/* Stick */
+.stick{
+  width:12px;
+  height:80px;
+  background: linear-gradient(180deg,#00bfff,#0050ff);
+  border-radius:6px;
+  margin-top:-10px;
+  transform-origin:top center;
+  box-shadow:0 0 10px rgba(0,150,255,0.6);
+}
+</style>
+</head>
+<body>
+
+<canvas id="bg"></canvas>
+
+<div class="top-buttons">
+  <button onclick="alert('Phishing URL detector\\nBuilt for quick local testing')">About</button>
+  <button onclick="alert('Team: Yomna & Co')">Team</button>
+  <button onclick="alert('Contact: your-email@example.com')">Contact Us</button>
+</div>
+
+<!-- Magnifier (Lens + Stick) -->
+<div class="magnifier" id="magnifier">
+  <div class="lens" id="lens">
+    <div class="highlight"></div>
+  </div>
+  <div class="stick"></div>
+</div>
+
+<div class="container">
+  <h1>🔍 PHISHING URL DETECTION</h1>
+  <input id="urlInput" type="text" placeholder="Enter URL e.g. https://example.com">
+  <button id="scanBtn">SCAN NOW</button>
+  <div id="result" class="result"></div>
+</div>
+
+<script>
+/* Background Animation */
+const canvas = document.getElementById("bg");
+const ctx = canvas.getContext("2d");
+let w,h,particles;
+function init(){ w=canvas.width=window.innerWidth; h=canvas.height=window.innerHeight;
+particles=Array.from({length:80},()=>({x:Math.random()*w,y:Math.random()*h,r:Math.random()*2,dx:(Math.random()-0.5)*0.8,dy:(Math.random()-0.5)*0.8,color:Math.random()>0.5?"#00ffff":"#7f00ff"}));
+}
+function draw(){ ctx.clearRect(0,0,w,h);
+for(let p of particles){ ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fillStyle=p.color; ctx.shadowBlur=15; ctx.shadowColor=p.color; ctx.fill(); p.x+=p.dx; p.y+=p.dy; if(p.x<0||p.x>w)p.dx*=-1; if(p.y<0||p.y>h)p.dy*=-1; }
+requestAnimationFrame(draw);}
+init(); draw(); window.onresize=init;
+
+/* Scan Button */
+const btn = document.getElementById('scanBtn');
+const input = document.getElementById('urlInput');
+const result = document.getElementById('result');
+const lens = document.getElementById('lens');
+
+function setResultText(text, cls) {
+  result.textContent = text;
+  result.className = 'result ' + cls;
+}
+
+btn.addEventListener('click', async ()=>{
+  const url = input.value.trim();
+  if(!url) return alert("Please enter a URL!");
+  setResultText("جاري التحليل...", "loading");
+  btn.disabled = true;
+  input.disabled = true;
+
+  try{
+    // use relative path so it works when served from the Flask app
+    const res = await fetch('/api/analyze',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({url})
+    });
+
+    if(!res.ok){
+      // try to parse error message
+      let errMsg = 'خطأ في الخادم';
+      try{
+        const errJson = await res.json();
+        if(errJson && errJson.error) errMsg = errJson.error;
+      }catch(e){}
+      setResultText(errMsg, 'loading');
+      lens.style.borderColor = 'rgba(255,200,0,0.9)';
+      lens.style.boxShadow = '0 0 20px rgba(255,200,0,0.4)';
+      return;
+    }
+
+    const data = await res.json();
+
+    // determine phishing vs safe
+    const textLower = (data.result || '').toString().toLowerCase();
+    const raw = (data.raw_label || '').toString().toLowerCase();
+    const conf = Number(data.confidence) || 0;
+
+    const isPhish = textLower.includes('خطر') || raw.includes('phish') || raw === '1' || raw === 'malicious';
+
+    if(isPhish){
+      setResultText(`⚠️ PHISHING DETECTED — ${conf.toFixed(2)}%`, 'danger');
+      lens.style.borderColor = 'rgba(255,0,0,0.9)';
+      lens.style.boxShadow = '0 0 25px rgba(255,0,0,0.7)';
+    } else {
+      setResultText(`✅ SAFE — ${conf.toFixed(2)}%`, 'safe');
+      lens.style.borderColor = 'rgba(0,255,150,0.9)';
+      lens.style.boxShadow = '0 0 20px rgba(0,200,150,0.6)';
+    }
+
+    // append small details
+    const details = document.createElement('div');
+    details.style.fontSize = '12px';
+    details.style.opacity = '0.9';
+    details.style.marginTop = '8px';
+    details.textContent = `raw: ${data.raw_label || '-'}  •  confidence: ${conf.toFixed(2)}%`;
+    // remove old details if exist and append new
+    const old = result.querySelector('div');
+    if(old) old.remove();
+    result.appendChild(details);
+
+  }catch(err){
+    console.error(err);
+    setResultText("Connection Error: تأكد من تشغيل Flask server.", 'loading');
+    lens.style.borderColor = 'rgba(255,200,0,0.9)';
+    lens.style.boxShadow = '0 0 20px rgba(255,200,0,0.4)';
+  }finally{
+    btn.disabled = false;
+    input.disabled = false;
+  }
+});
+
+/* Magnifier self movement (swing) */
+let angle = 0;
+function moveLens(){
+  angle += 0.02; // سرعة الحركة
+  const yOffset = Math.sin(angle) * 50; // اتأرجح لأعلى وأسفل
+  const magnifier = document.getElementById('magnifier');
+  magnifier.style.top = `calc(50% + ${yOffset}px)`;
+  magnifier.style.transform = `translateY(-50%) rotate(${Math.sin(angle)*15}deg)`;
+  requestAnimationFrame(moveLens);
+}
+moveLens();
+</script>
+</body>
+</html>

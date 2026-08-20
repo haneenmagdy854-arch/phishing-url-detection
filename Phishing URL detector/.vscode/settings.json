@@ -1,0 +1,10 @@
+{
+    "python.defaultInterpreterPath": "C:/Users/Dell/anaconda3/python.exe",
+    "python.terminal.activateEnvironment": true,
+    "python.analysis.autoImportCompletions": true,
+    "editor.formatOnSave": true,
+    "files.autoSave": "afterDelay",
+    "terminal.integrated.env.windows": {
+        "FLASK_APP": "app.py"
+    }
+}

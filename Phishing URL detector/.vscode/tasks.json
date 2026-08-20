@@ -1,0 +1,17 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Install Requirements",
+      "type": "shell",
+      "command": "pip install -r requirements.txt",
+      "problemMatcher": []
+    },
+    {
+      "label": "Run Flask Server",
+      "type": "shell",
+      "command": "python app.py",
+      "problemMatcher": []
+    }
+  ]
+}
